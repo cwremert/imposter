@@ -919,6 +919,7 @@ function renderRevealScreen(playerIdx) {
         <div style="font-size:1.4rem;font-weight:800;color:var(--gold);">${state.currentCategory}</div>
         <p style="font-size:0.85rem;">Försök att smälta in! Säg ett ord som låter trovärdigt.</p>
       </div>
+      <button class="btn btn-secondary" id="btn-change-word-reveal" style="width:100%;margin-bottom:8px;">Byt ord 🔄</button>
       <button class="btn btn-ghost" id="btn-done-reveal">Dolt – ge till nästa ✓</button>
     `;
   } else {
@@ -930,10 +931,12 @@ function renderRevealScreen(playerIdx) {
         <div class="divider"></div>
         <p>Lär dig ordet väl! Avslöja inte att du vet vad det är.</p>
       </div>
+      <button class="btn btn-secondary" id="btn-change-word-reveal" style="width:100%;margin-bottom:8px;">Byt ord 🔄</button>
       <button class="btn btn-ghost" id="btn-done-reveal">Dolt – ge till nästa ✓</button>
     `;
   }
 
+  document.getElementById('btn-change-word-reveal').addEventListener('click', startGame);
   document.getElementById('btn-done-reveal').addEventListener('click', () => {
     state.currentRevealStep++;
     showNextReveal();
