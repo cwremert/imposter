@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Imposterspelet</title>
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --card: #16162a;
+      --card2: #1e1e38;
+      --red: #e94560;
+      --green: #00c87a;
+      --gold: #ffd700;
+      --blue: #4a9eff;
+      --text: #f0f0f0;
+      --muted: #888;
+      --border: #2a2a4a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    #app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+      position: relative;
+    }
+
+    /* ── Screens ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 480px;
+      gap: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Typography ── */
+    h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -1px; }
+    h2 { font-size: 1.5rem; font-weight: 700; }
+    h3 { font-size: 1.1rem; font-weight: 600; color: var(--muted); }
+    p  { font-size: 1rem; line-height: 1.5; color: var(--muted); text-align: center; }
+
+    .big-word {
+      font-size: clamp(2.6rem, 10vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -2px;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .emoji-big { font-size: 3rem; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .card.glow-green { border-color: var(--green); box-shadow: 0 0 30px rgba(0,200,122,0.15); }
+    .card.glow-red   { border-color: var(--red);   box-shadow: 0 0 30px rgba(233,69,96,0.2); }
+    .card.glow-gold  { border-color: var(--gold);  box-shadow: 0 0 30px rgba(255,215,0,0.15); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 18px 24px;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s;
+      letter-spacing: 0.3px;
+    }
+    .btn:active { transform: scale(0.97); opacity: 0.85; }
+
+    .btn-primary  { background: var(--blue); color: #fff; }
+    .btn-red      { background: var(--red);  color: #fff; }
+    .btn-green    { background: var(--green); color: #0d0d1a; }
+    .btn-ghost    { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+    .btn-gold     { background: var(--gold);  color: #0d0d1a; }
+
+    /* ── Player count control ── */
+    .count-control {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      justify-content: center;
+    }
+    .count-btn {
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--card2);
+      color: var(--text);
+      font-size: 1.6rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .count-btn:active { transform: scale(0.92); }
+    .count-btn:hover  { border-color: var(--blue); }
+    .count-display {
+      font-size: 3.5rem;
+      font-weight: 900;
+      min-width: 80px;
+      text-align: center;
+      color: var(--blue);
+    }
+
+    /* ── Badge / pill ── */
+    .badge {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 99px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .badge-green { background: rgba(0,200,122,0.15); color: var(--green); border: 1px solid rgba(0,200,122,0.3); }
+    .badge-red   { background: rgba(233,69,96,0.15);  color: var(--red);   border: 1px solid rgba(233,69,96,0.3); }
+    .badge-gold  { background: rgba(255,215,0,0.15);  color: var(--gold);  border: 1px solid rgba(255,215,0,0.3); }
+    .badge-blue  { background: rgba(74,158,255,0.15); color: var(--blue);  border: 1px solid rgba(74,158,255,0.3); }
+
+    /* ── Divider ── */
+    .divider { width: 100%; height: 1px; background: var(--border); }
+
+    /* ── Cover screen (pitch black) ── */
+    #screen-cover {
+      position: fixed; inset: 0;
+      background: #000;
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 32px 24px;
+      cursor: pointer;
+      text-align: center;
+    }
+    #screen-cover.active { display: flex; }
+    #cover-player-label { font-size: 1.1rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    #cover-player-name  { font-size: 2.2rem; font-weight: 900; color: #fff; }
+    #cover-hint { font-size: 0.9rem; color: #555; margin-top: 8px; }
+    .cover-tap-hint {
+      margin-top: 32px;
+      font-size: 0.85rem;
+      color: #444;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
+    }
+
+    /* ── Vote result list ── */
+    .player-list { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+    .player-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 18px;
+    }
+    .player-row.highlight-red   { border-color: var(--red);   background: rgba(233,69,96,0.1); }
+    .player-row.highlight-green { border-color: var(--green); background: rgba(0,200,122,0.1); }
+    .player-row-name { font-weight: 700; font-size: 1rem; }
+    .player-row-info { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── Scroll when many players ── */
+    .scroll-list { max-height: 55vh; overflow-y: auto; width: 100%; }
+
+    /* ── Logo ── */
+    .logo { font-size: 2.8rem; font-weight: 900; color: var(--text); }
+    .logo span { color: var(--red); }
+
+    /* ── Progress dots ── */
+    .dots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--border); transition: background 0.3s;
+    }
+    .dot.done  { background: var(--green); }
+    .dot.active { background: var(--blue); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════════════════════════
+       COVER (pitch black pass screen)
+  ══════════════════════════════════ -->
+  <div id="screen-cover">
+    <div id="cover-player-label">Ge telefonen till</div>
+    <div id="cover-player-name">Spelare 1</div>
+    <div id="cover-hint">Tryck varsomhelst för att visa ditt ord</div>
+    <div class="cover-tap-hint">Tryck för att fortsätta →</div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       1. SETUP
+  ══════════════════════════════════ -->
+  <div class="screen active" id="screen-setup">
+    <div class="logo">Impostor<span>.</span></div>
+    <p>Vem är bedragaren bland er?</p>
+
+    <div class="card" style="gap:16px;display:flex;flex-direction:column;">
+      <h3>Antal spelare</h3>
+      <div class="count-control">
+        <button class="count-btn" id="btn-minus">−</button>
+        <div class="count-display" id="count-display">4</div>
+        <button class="count-btn" id="btn-plus">+</button>
+      </div>
+      <p style="font-size:0.82rem;">Minst 3 spelare</p>
+    </div>
+
+    <button class="btn btn-primary" id="btn-start">Starta spelet</button>
+  </div>
+
+  <!-- ══════════════════════════════════
+       2. REVEAL (word or imposter)
+  ══════════════════════════════════ -->
+  <div class="screen" id="screen-reveal">
+    <!-- filled dynamically -->
+  </div>
+
+  <!-- ══════════════════════════════════
+       3. DISCUSSION
+  ══════════════════════════════════ -->
+  <div class="screen" id="screen-discussion">
+    <div class="emoji-big">💬</div>
+    <h2 style="text-align:center;">Alla har sett sitt ord!</h2>
+
+    <div class="card">
+      <div id="first-speaker" style="font-size:1.6rem;font-weight:900;color:var(--blue);margin-bottom:12px;">Spelare 2</div>
+      <p><strong style="color:var(--text);">börjar</strong> säga ett ord kopplat till temat.<br>Gå sedan runt och låt alla säga varsitt ord.</p>
+    </div>
+
+    <div class="card" style="background:rgba(233,69,96,0.06);border-color:rgba(233,69,96,0.2);">
+      <p>Diskutera vem ni tror är <strong style="color:var(--red);">Impostern</strong> och rösta sedan öppet vid bordet.</p>
+    </div>
+
+    <div style="display:flex;gap:12px;width:100%;">
+      <button class="btn btn-ghost" id="btn-change-word" style="flex:1;">Byt ord 🔄</button>
+      <button class="btn btn-red" id="btn-go-vote" style="flex:2;">Avslöja Impostern →</button>
+    </div>
+
+    <div class="card" style="background:rgba(255,255,255,0.03);border-color:var(--border);padding:14px 18px;">
+      <p style="font-size:0.82rem;color:var(--muted);">Känner du inte till ordet? Berätta för de andra att ni behöver byta, tryck sedan på <strong style="color:var(--text);">Byt ord</strong> för att dra ett nytt ord och börja om.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       4. RESULTS
+  ══════════════════════════════════ -->
+  <div class="screen" id="screen-results">
+    <div class="emoji-big" id="result-emoji">🕵️</div>
+    <h2 id="result-title" style="text-align:center;">Impostern var...</h2>
+
+    <div class="card glow-red" id="result-imposter-card">
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">Impostern</p>
+      <div id="result-imposter-name" class="big-word" style="color:var(--red);font-size:2.4rem;">Spelare 3</div>
+    </div>
+
+    <div class="card glow-green" id="result-word-card">
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">Ordet var</p>
+      <div id="result-word" class="big-word" style="color:var(--green);font-size:2.2rem;">Piano</div>
+    </div>
+
+    <div style="display:flex;gap:12px;width:100%;">
+      <button class="btn btn-ghost" id="btn-end" style="flex:1;">Avsluta</button>
+      <button class="btn btn-primary" id="btn-new-round" style="flex:2;">Ny runda 🔄</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   WORD DATABASE
+════════════════════════════════════════ */
+const wordDatabase = [
+  // Sport
+  { word: "Fotboll",       category: "Sport" },
+  { word: "Tennis",        category: "Sport" },
+  { word: "Simning",       category: "Sport" },
+  { word: "Handboll",      category: "Sport" },
+  { word: "Basket",        category: "Sport" },
+  { word: "Ishockey",      category: "Sport" },
+  { word: "Golf",          category: "Sport" },
+  { word: "Boxning",       category: "Sport" },
+  { word: "Brottning",     category: "Sport" },
+  { word: "Friidrott",     category: "Sport" },
+  { word: "Cykling",       category: "Sport" },
+  { word: "Rodd",          category: "Sport" },
+  { word: "Segling",       category: "Sport" },
+  { word: "Karate",        category: "Sport" },
+  { word: "Judo",          category: "Sport" },
+  { word: "Fäktning",      category: "Sport" },
+  { word: "Polo",          category: "Sport" },
+  { word: "Ryggsim",       category: "Sport" },
+  { word: "Vattenpolo",    category: "Sport" },
+  { word: "Volleyboll",    category: "Sport" },
+  { word: "Badminton",     category: "Sport" },
+  { word: "Bordtennis",    category: "Sport" },
+  { word: "Bowling",       category: "Sport" },
+  { word: "Darts",         category: "Sport" },
+  { word: "Schack",        category: "Spel" },
+  { word: "Surfbräda",     category: "Sport" },
+  { word: "Skateboard",    category: "Sport" },
+  // Vintersport
+  { word: "Skidor",        category: "Vintersport" },
+  { word: "Snowboard",     category: "Vintersport" },
+  { word: "Skridskor",     category: "Vintersport" },
+  { word: "Kälke",         category: "Vintersport" },
+  { word: "Curling",       category: "Vintersport" },
+  { word: "Bobsleigh",     category: "Vintersport" },
+  { word: "Längdskidor",   category: "Vintersport" },
+  // Musikinstrument
+  { word: "Piano",         category: "Musikinstrument" },
+  { word: "Gitarr",        category: "Musikinstrument" },
+  { word: "Trumpet",       category: "Musikinstrument" },
+  { word: "Trummor",       category: "Musikinstrument" },
+  { word: "Fiol",          category: "Musikinstrument" },
+  { word: "Saxofon",       category: "Musikinstrument" },
+  { word: "Harpa",         category: "Musikinstrument" },
+  { word: "Dragspel",      category: "Musikinstrument" },
+  { word: "Klarinett",     category: "Musikinstrument" },
+  { word: "Oboe",          category: "Musikinstrument" },
+  { word: "Tuba",          category: "Musikinstrument" },
+  { word: "Cello",         category: "Musikinstrument" },
+  { word: "Kontrabas",     category: "Musikinstrument" },
+  { word: "Mandolin",      category: "Musikinstrument" },
+  { word: "Ukulele",       category: "Musikinstrument" },
+  { word: "Banjo",         category: "Musikinstrument" },
+  { word: "Kazoo",         category: "Musikinstrument" },
+  // Djur – landdjur
+  { word: "Elefant",       category: "Djur" },
+  { word: "Lejon",         category: "Djur" },
+  { word: "Gepard",        category: "Djur" },
+  { word: "Gorilla",       category: "Djur" },
+  { word: "Isbjörn",       category: "Djur" },
+  { word: "Pingvin",       category: "Djur" },
+  { word: "Krokodil",      category: "Djur" },
+  { word: "Flodhäst",      category: "Djur" },
+  { word: "Noshörning",    category: "Djur" },
+  { word: "Zebra",         category: "Djur" },
+  { word: "Giraff",        category: "Djur" },
+  { word: "Känguru",       category: "Djur" },
+  { word: "Koala",         category: "Djur" },
+  { word: "Panda",         category: "Djur" },
+  { word: "Varg",          category: "Djur" },
+  { word: "Björn",         category: "Djur" },
+  { word: "Räv",           category: "Djur" },
+  { word: "Igelkott",      category: "Djur" },
+  { word: "Ekorre",        category: "Djur" },
+  { word: "Bäver",         category: "Djur" },
+  { word: "Utter",         category: "Djur" },
+  { word: "Tvättbjörn",    category: "Djur" },
+  { word: "Mård",          category: "Djur" },
+  { word: "Lodjur",        category: "Djur" },
+  { word: "Älg",           category: "Djur" },
+  { word: "Ren",           category: "Djur" },
+  { word: "Rådjur",        category: "Djur" },
+  { word: "Vildsvin",      category: "Djur" },
+  // Djur – fåglar
+  { word: "Örn",           category: "Fågel" },
+  { word: "Uggla",         category: "Fågel" },
+  { word: "Papegoja",      category: "Fågel" },
+  { word: "Flamingo",      category: "Fågel" },
+  { word: "Struts",        category: "Fågel" },
+  { word: "Pelikan",       category: "Fågel" },
+  { word: "Tukan",         category: "Fågel" },
+  { word: "Kråka",         category: "Fågel" },
+  { word: "Kolibri",       category: "Fågel" },
+  { word: "Påfågel",       category: "Fågel" },
+  // Djur – havsdjur
+  { word: "Delfin",        category: "Havsdjur" },
+  { word: "Bläckfisk",     category: "Havsdjur" },
+  { word: "Haj",           category: "Havsdjur" },
+  { word: "Manet",         category: "Havsdjur" },
+  { word: "Valross",       category: "Havsdjur" },
+  { word: "Narval",        category: "Havsdjur" },
+  { word: "Blåval",        category: "Havsdjur" },
+  { word: "Sjöhäst",       category: "Havsdjur" },
+  { word: "Krabba",        category: "Havsdjur" },
+  { word: "Hummer",        category: "Havsdjur" },
+  { word: "Sjöstjärna",    category: "Havsdjur" },
+  // Mat
+  { word: "Pizza",         category: "Mat" },
+  { word: "Sushi",         category: "Mat" },
+  { word: "Hamburgare",    category: "Mat" },
+  { word: "Taco",          category: "Mat" },
+  { word: "Lasagne",       category: "Mat" },
+  { word: "Paella",        category: "Mat" },
+  { word: "Risotto",       category: "Mat" },
+  { word: "Smörgås",       category: "Mat" },
+  { word: "Soppa",         category: "Mat" },
+  { word: "Sallad",        category: "Mat" },
+  { word: "Köttbullar",    category: "Mat" },
+  { word: "Pannkaka",      category: "Mat" },
+  { word: "Våffla",        category: "Mat" },
+  { word: "Grillkorv",     category: "Mat" },
+  { word: "Kebab",         category: "Mat" },
+  { word: "Ramen",         category: "Mat" },
+  { word: "Currry",        category: "Mat" },
+  { word: "Wok",           category: "Mat" },
+  { word: "Steak",         category: "Mat" },
+  { word: "Schnitzel",     category: "Mat" },
+  // Sötsaker & dryck
+  { word: "Choklad",       category: "Sötsak" },
+  { word: "Glass",         category: "Sötsak" },
+  { word: "Kanelbulle",    category: "Bakverk" },
+  { word: "Kaka",          category: "Bakverk" },
+  { word: "Tårta",         category: "Bakverk" },
+  { word: "Muffin",        category: "Bakverk" },
+  { word: "Macaron",       category: "Bakverk" },
+  { word: "Croissant",     category: "Bakverk" },
+  { word: "Godis",         category: "Sötsak" },
+  { word: "Lakrits",       category: "Sötsak" },
+  { word: "Lollipop",      category: "Sötsak" },
+  { word: "Kaffe",         category: "Dryck" },
+  { word: "Te",            category: "Dryck" },
+  { word: "Smoothie",      category: "Dryck" },
+  { word: "Milkshake",     category: "Dryck" },
+  { word: "Juice",         category: "Dryck" },
+  // Natur & väder
+  { word: "Vulkan",        category: "Natur" },
+  { word: "Regnbåge",      category: "Väderfenomen" },
+  { word: "Tornado",       category: "Väderfenomen" },
+  { word: "Tsunami",       category: "Naturkatastrof" },
+  { word: "Norrsken",      category: "Väderfenomen" },
+  { word: "Orkan",         category: "Väderfenomen" },
+  { word: "Jordbävning",   category: "Naturkatastrof" },
+  { word: "Lavin",         category: "Naturkatastrof" },
+  { word: "Blixtnedslag",  category: "Väderfenomen" },
+  { word: "Dimma",         category: "Väderfenomen" },
+  { word: "Hagel",         category: "Väderfenomen" },
+  { word: "Flod",          category: "Natur" },
+  { word: "Vattenfall",    category: "Natur" },
+  { word: "Klippa",        category: "Natur" },
+  { word: "Grotta",        category: "Natur" },
+  { word: "Ö",             category: "Natur" },
+  { word: "Glaciär",       category: "Natur" },
+  { word: "Öken",          category: "Natur" },
+  { word: "Skog",          category: "Natur" },
+  { word: "Sjö",           category: "Natur" },
+  // Fordon
+  { word: "Ubåt",          category: "Fordon" },
+  { word: "Helikopter",    category: "Fordon" },
+  { word: "Rymdskepp",     category: "Fordon" },
+  { word: "Motorcykel",    category: "Fordon" },
+  { word: "Traktor",       category: "Fordon" },
+  { word: "Brandbil",      category: "Fordon" },
+  { word: "Ambulans",      category: "Fordon" },
+  { word: "Lastbil",       category: "Fordon" },
+  { word: "Buss",          category: "Fordon" },
+  { word: "Spårvagn",      category: "Fordon" },
+  { word: "Tunnelbana",    category: "Fordon" },
+  { word: "Flygplan",      category: "Fordon" },
+  { word: "Luftballong",   category: "Fordon" },
+  { word: "Segelbåt",      category: "Fordon" },
+  { word: "Speedbåt",      category: "Fordon" },
+  { word: "Tankfartyg",    category: "Fordon" },
+  { word: "Kryssningsfartyg", category: "Fordon" },
+  { word: "Tåg",           category: "Fordon" },
+  // Byggnader & platser
+  { word: "Fyrtorn",       category: "Byggnad" },
+  { word: "Pyramid",       category: "Monument" },
+  { word: "Slott",         category: "Byggnad" },
+  { word: "Fängelse",      category: "Byggnad" },
+  { word: "Bibliotek",     category: "Plats" },
+  { word: "Akvarium",      category: "Plats" },
+  { word: "Museum",        category: "Plats" },
+  { word: "Sjukhus",       category: "Byggnad" },
+  { word: "Kyrka",         category: "Byggnad" },
+  { word: "Moské",         category: "Byggnad" },
+  { word: "Tempel",        category: "Byggnad" },
+  { word: "Stadion",       category: "Byggnad" },
+  { word: "Arena",         category: "Byggnad" },
+  { word: "Operahus",      category: "Byggnad" },
+  { word: "Teater",        category: "Plats" },
+  { word: "Bio",           category: "Plats" },
+  { word: "Flygplats",     category: "Plats" },
+  { word: "Hamn",          category: "Plats" },
+  { word: "Fyr",           category: "Byggnad" },
+  { word: "Kasino",        category: "Plats" },
+  { word: "Hotell",        category: "Byggnad" },
+  { word: "Igloo",         category: "Bostad" },
+  { word: "Koja",          category: "Bostad" },
+  { word: "Tält",          category: "Bostad" },
+  { word: "Husbåt",        category: "Bostad" },
+  { word: "Herrgård",      category: "Byggnad" },
+  { word: "Kloster",       category: "Byggnad" },
+  // Nöje & underhållning
+  { word: "Cirkus",        category: "Underhållning" },
+  { word: "Karusell",      category: "Nöjespark" },
+  { word: "Rutschkana",    category: "Nöjespark" },
+  { word: "Berg-och-dalbana", category: "Nöjespark" },
+  { word: "Spökhus",       category: "Nöjespark" },
+  { word: "Trampolin",     category: "Sportredskap" },
+  { word: "Studsmatta",    category: "Sportredskap" },
+  { word: "Gunghäst",      category: "Leksak" },
+  { word: "Gunga",         category: "Lekplats" },
+  { word: "Sandlåda",      category: "Lekplats" },
+  { word: "Kungsholmen",   category: "Sällskapsspel" },
+  { word: "Monopol",       category: "Sällskapsspel" },
+  { word: "Jenga",         category: "Sällskapsspel" },
+  // Växter & blommor
+  { word: "Solros",        category: "Blomma" },
+  { word: "Ros",           category: "Blomma" },
+  { word: "Tulpan",        category: "Blomma" },
+  { word: "Orkidé",        category: "Blomma" },
+  { word: "Lavendel",      category: "Blomma" },
+  { word: "Maskros",       category: "Blomma" },
+  { word: "Kaktus",        category: "Växt" },
+  { word: "Bambu",         category: "Växt" },
+  { word: "Bonsaiträd",    category: "Växt" },
+  { word: "Ekollon",       category: "Växt" },
+  { word: "Svamp",         category: "Växt" },
+  { word: "Mossa",         category: "Växt" },
+  { word: "Alger",         category: "Växt" },
+  // Rymd
+  { word: "Satellit",      category: "Rymdobjekt" },
+  { word: "Komet",         category: "Rymdobjekt" },
+  { word: "Asteroid",      category: "Rymdobjekt" },
+  { word: "Svartvält",     category: "Rymdobjekt" },
+  { word: "Nebulosa",      category: "Rymdobjekt" },
+  { word: "Teleskop",      category: "Instrument" },
+  { word: "Raket",         category: "Fordon" },
+  // Verktyg & instrument
+  { word: "Paraply",       category: "Accessoar" },
+  { word: "Kikare",        category: "Instrument" },
+  { word: "Mikroskop",     category: "Instrument" },
+  { word: "Kompass",       category: "Instrument" },
+  { word: "Bumerang",      category: "Redskap" },
+  { word: "Hammare",       category: "Verktyg" },
+  { word: "Skruvmejsel",   category: "Verktyg" },
+  { word: "Sax",           category: "Verktyg" },
+  { word: "Stege",         category: "Redskap" },
+  { word: "Spade",         category: "Trädgård" },
+  { word: "Kratsa",        category: "Trädgård" },
+  { word: "Vattenkanna",   category: "Trädgård" },
+  { word: "Grepp",         category: "Verktyg" },
+  // Konstruktioner
+  { word: "Bro",           category: "Konstruktion" },
+  { word: "Tunnel",        category: "Konstruktion" },
+  { word: "Fontän",        category: "Konstruktion" },
+  { word: "Labyrint",      category: "Konstruktion" },
+  { word: "Ankare",        category: "Båt" },
+  { word: "Fyr",           category: "Konstruktion" },
+  { word: "Dam",           category: "Konstruktion" },
+  { word: "Vindkraft",     category: "Konstruktion" },
+  { word: "Lyktstolpe",    category: "Konstruktion" },
+  // Avkoppling & hem
+  { word: "Sauna",         category: "Avkoppling" },
+  { word: "Jacuzzi",       category: "Avkoppling" },
+  { word: "Hängmatta",     category: "Avkoppling" },
+  { word: "Kakelugn",      category: "Hem" },
+  { word: "Spis",          category: "Hem" },
+  { word: "Kylskåp",       category: "Hem" },
+  { word: "Diskmaskin",    category: "Hem" },
+  { word: "Tvättmaskin",   category: "Hem" },
+  { word: "Dammsugare",    category: "Hem" },
+  { word: "Soffa",         category: "Möbel" },
+  { word: "Fåtölj",        category: "Möbel" },
+  { word: "Bokhylla",      category: "Möbel" },
+  // Kläder & accessoarer
+  { word: "Hatt",          category: "Kläder" },
+  { word: "Slips",         category: "Kläder" },
+  { word: "Klänning",      category: "Kläder" },
+  { word: "Kostym",        category: "Kläder" },
+  { word: "Kappa",         category: "Kläder" },
+  { word: "Ryggsäck",      category: "Accessoar" },
+  { word: "Handväska",     category: "Accessoar" },
+  { word: "Plånbok",       category: "Accessoar" },
+  { word: "Armbandsur",    category: "Accessoar" },
+  { word: "Solglasögon",   category: "Accessoar" },
+  { word: "Scarf",         category: "Kläder" },
+  { word: "Handskar",      category: "Kläder" },
+  // Mat & dryck – mer
+  { word: "Brioche",       category: "Bakverk" },
+  { word: "Bagel",         category: "Bakverk" },
+  { word: "Pretzel",       category: "Snacks" },
+  { word: "Popcorn",       category: "Snacks" },
+  { word: "Chips",         category: "Snacks" },
+  { word: "Nachos",        category: "Snacks" },
+  { word: "Stek",          category: "Mat" },
+  { word: "Lax",           category: "Mat" },
+  { word: "Räkor",         category: "Mat" },
+  { word: "Ostbricka",     category: "Mat" },
+  // Teknik & elektronik
+  { word: "Dator",         category: "Teknik" },
+  { word: "Surfplatta",    category: "Teknik" },
+  { word: "Kamera",        category: "Teknik" },
+  { word: "Robot",         category: "Teknik" },
+  { word: "Drönare",       category: "Teknik" },
+  { word: "Hörlurar",      category: "Teknik" },
+  { word: "Projektor",     category: "Teknik" },
+  { word: "Mikrofon",      category: "Teknik" },
+  { word: "Högtalare",     category: "Teknik" },
+  { word: "Batteripack",   category: "Teknik" },
+];
+
+/* ════════════════════════════════════════
+   STATE
+════════════════════════════════════════ */
+const state = {
+  numPlayers: 4,
+  imposterIndex: -1,      // which player (0-indexed) is imposter
+  revealOrder: [],         // shuffled player indices for reveal
+  currentRevealStep: 0,
+  currentWord: null,
+  currentCategory: null,
+  firstSpeaker: -1,
+};
+
+/* ════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════ */
+function rand(n) { return Math.floor(Math.random() * n); }
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rand(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function playerName(i) { return `Spelare ${i + 1}`; }
+
+function savePrefs() {
+  try { localStorage.setItem('impostor_numPlayers', state.numPlayers); } catch(e) {}
+}
+
+function loadPrefs() {
+  try {
+    const n = parseInt(localStorage.getItem('impostor_numPlayers'));
+    if (n >= 3) state.numPlayers = n;
+  } catch(e) {}
+}
+
+/* ════════════════════════════════════════
+   SCREEN MANAGEMENT
+════════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+/* ── Cover (black pass screen) ── */
+let coverCallback = null;
+
+function showCover(playerName, hint, onTap) {
+  document.getElementById('cover-player-name').textContent = playerName;
+  document.getElementById('cover-hint').textContent = hint || 'Tryck för att visa ditt ord';
+  coverCallback = onTap;
+  document.getElementById('screen-cover').classList.add('active');
+}
+
+function hideCover() {
+  document.getElementById('screen-cover').classList.remove('active');
+}
+
+document.getElementById('screen-cover').addEventListener('click', () => {
+  hideCover();
+  if (coverCallback) { const cb = coverCallback; coverCallback = null; cb(); }
+});
+
+/* ════════════════════════════════════════
+   SETUP SCREEN
+════════════════════════════════════════ */
+function updateCountDisplay() {
+  document.getElementById('count-display').textContent = state.numPlayers;
+  document.getElementById('btn-minus').style.opacity = state.numPlayers <= 3 ? '0.3' : '1';
+}
+
+document.getElementById('btn-minus').addEventListener('click', () => {
+  if (state.numPlayers > 3) { state.numPlayers--; savePrefs(); updateCountDisplay(); }
+});
+document.getElementById('btn-plus').addEventListener('click', () => {
+  state.numPlayers++;
+  savePrefs();
+  updateCountDisplay();
+});
+document.getElementById('btn-start').addEventListener('click', startGame);
+
+/* ════════════════════════════════════════
+   GAME START
+════════════════════════════════════════ */
+function startGame() {
+  // Pick random word
+  const entry = wordDatabase[rand(wordDatabase.length)];
+  state.currentWord     = entry.word;
+  state.currentCategory = entry.category;
+
+  // Pick random imposter
+  state.imposterIndex = rand(state.numPlayers);
+
+  // Shuffle reveal order
+  state.revealOrder = shuffle([...Array(state.numPlayers).keys()]);
+  state.currentRevealStep = 0;
+
+  // Pick random first speaker
+  state.firstSpeaker = rand(state.numPlayers);
+
+  showNextReveal();
+}
+
+/* ════════════════════════════════════════
+   REVEAL LOOP
+════════════════════════════════════════ */
+function showNextReveal() {
+  if (state.currentRevealStep >= state.numPlayers) {
+    showDiscussion();
+    return;
+  }
+
+  const playerIdx = state.revealOrder[state.currentRevealStep];
+  const name      = playerName(playerIdx);
+
+  showCover(name, 'Tryck för att visa ditt ord', () => {
+    renderRevealScreen(playerIdx);
+    showScreen('screen-reveal');
+  });
+}
+
+function renderRevealScreen(playerIdx) {
+  const isImposter = (playerIdx === state.imposterIndex);
+  const el = document.getElementById('screen-reveal');
+
+  // Progress dots
+  const total = state.numPlayers;
+  const done  = state.currentRevealStep;
+  const dots  = [...Array(total)].map((_, i) => {
+    if (i < done)  return `<div class="dot done"></div>`;
+    if (i === done) return `<div class="dot active"></div>`;
+    return `<div class="dot"></div>`;
+  }).join('');
+
+  if (isImposter) {
+    el.innerHTML = `
+      <div class="dots">${dots}</div>
+      <div class="emoji-big">🕵️</div>
+      <div class="card glow-red" style="gap:14px;display:flex;flex-direction:column;">
+        <span class="badge badge-red">Impostern</span>
+        <div class="big-word" style="color:var(--red);">DU ÄR IMPOSTERN!</div>
+        <div class="divider"></div>
+        <p>Du vet <strong style="color:var(--text);">inte</strong> vilket ord de andra har.</p>
+        <p style="margin-top:4px;">Tips om kategorin:</p>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--gold);">${state.currentCategory}</div>
+        <p style="font-size:0.85rem;">Försök att smälta in! Säg ett ord som låter trovärdigt.</p>
+      </div>
+      <button class="btn btn-ghost" id="btn-done-reveal">Dolt – ge till nästa ✓</button>
+    `;
+  } else {
+    el.innerHTML = `
+      <div class="dots">${dots}</div>
+      <div class="card glow-green" style="gap:14px;display:flex;flex-direction:column;">
+        <span class="badge badge-green">Du är inte impostern</span>
+        <div class="big-word" style="color:var(--green);">${state.currentWord}</div>
+        <div class="divider"></div>
+        <p>Lär dig ordet väl! Avslöja inte att du vet vad det är.</p>
+      </div>
+      <button class="btn btn-ghost" id="btn-done-reveal">Dolt – ge till nästa ✓</button>
+    `;
+  }
+
+  document.getElementById('btn-done-reveal').addEventListener('click', () => {
+    state.currentRevealStep++;
+    showNextReveal();
+  });
+}
+
+/* ════════════════════════════════════════
+   DISCUSSION
+════════════════════════════════════════ */
+function showDiscussion() {
+  document.getElementById('first-speaker').textContent = playerName(state.firstSpeaker);
+  showScreen('screen-discussion');
+}
+
+document.getElementById('btn-go-vote').addEventListener('click', showResults);
+document.getElementById('btn-change-word').addEventListener('click', startGame);
+
+/* ════════════════════════════════════════
+   RESULTS
+════════════════════════════════════════ */
+function showResults() {
+  document.getElementById('result-imposter-name').textContent = playerName(state.imposterIndex);
+  document.getElementById('result-word').textContent = state.currentWord;
+  document.getElementById('result-title').textContent = 'Impostern var...';
+  document.getElementById('result-emoji').textContent = '🕵️';
+  showScreen('screen-results');
+}
+
+document.getElementById('btn-new-round').addEventListener('click', startGame);
+document.getElementById('btn-end').addEventListener('click', () => {
+  showScreen('screen-setup');
+});
+
+/* ════════════════════════════════════════
+   INIT
+════════════════════════════════════════ */
+loadPrefs();
+updateCountDisplay();
+</script>
+</body>
+</html>
